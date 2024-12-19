@@ -150,30 +150,24 @@ function renderGame(state) {
   
     const currentPlayer = state.players[state.currentPlayerIndex];
   
-    // Highlight the current turn prominently
+    // Highlight whose turn it is
     const turnInfo = document.createElement('div');
     turnInfo.className = "mb-4 text-lg font-bold p-2 bg-blue-100 rounded border border-blue-300";
     turnInfo.textContent = `Current Turn: ${currentPlayer.name}`;
     splendorBoard.appendChild(turnInfo);
   
-    // Container for other players (not you)
+    // Opponents info (short version, as before)
     const otherPlayersContainer = document.createElement('div');
     otherPlayersContainer.className = "mb-6 flex space-x-4 items-start";
   
-    // Find your own player object
     const myPlayer = state.players.find(p => p.id === socket.id);
   
     state.players.forEach(player => {
-      if (player.id === socket.id) return; // skip yourself here, you'll show yourself at the bottom
-  
+      if (player.id === myPlayer.id) return;
       // Summarize purchased cards by color
       const cardColors = {white:0,blue:0,green:0,red:0,black:0};
       player.cards.forEach(c => cardColors[c.color]++);
-  
-      // Count total chips
       const totalChips = Object.values(player.chips).reduce((sum, val) => sum+val, 0);
-  
-      // Reserved cards count
       const reservedCount = player.reserved.length;
   
       const pDiv = document.createElement('div');
@@ -198,7 +192,7 @@ function renderGame(state) {
     });
     splendorBoard.appendChild(otherPlayersContainer);
   
-    // Display the market as before (unchanged)
+    // Market display (unchanged)
     if (state.market) {
       const marketContainer = document.createElement('div');
       marketContainer.className = "space-y-6 mb-6";
@@ -237,12 +231,10 @@ function renderGame(state) {
           cardDiv.dataset.level = level;
           cardDiv.dataset.index = index;
   
-          // Buy card on click
           cardDiv.addEventListener('click', () => {
             socket.emit('buyCard', { level, index, lobbyId: currentLobbyId });
           });
   
-          // Reserve button
           const reserveBtn = document.createElement('button');
           reserveBtn.className = "bg-yellow-500 text-white px-2 py-1 mt-2 block";
           reserveBtn.textContent = "Reserve";
@@ -263,8 +255,6 @@ function renderGame(state) {
     }
   
     // Your personal area at the bottom
-    // Shows your chips, purchased cards laid out, reserved cards face-up (since you know them),
-    // and the Take Chips UI if it's your turn.
     const myArea = document.createElement('div');
     myArea.className = "mt-8 border-t pt-4";
   
@@ -273,7 +263,7 @@ function renderGame(state) {
     myTitle.textContent = "Your Area:";
     myArea.appendChild(myTitle);
   
-    // Display your chips in detail
+    // Your chips
     const myChipsDiv = document.createElement('div');
     myChipsDiv.className = "mb-4";
     myChipsDiv.innerHTML = `<div class="font-semibold">Your Chips:</div>
@@ -282,7 +272,7 @@ function renderGame(state) {
       ).join('') || 'None'}`;
     myArea.appendChild(myChipsDiv);
   
-    // Display your purchased cards in a neat row
+    // Your purchased cards
     const myCardsDiv = document.createElement('div');
     myCardsDiv.className = "mb-4";
     myCardsDiv.innerHTML = `<div class="font-semibold">Your Purchased Cards:</div>`;
@@ -298,7 +288,7 @@ function renderGame(state) {
     }
     myArea.appendChild(myCardsDiv);
   
-    // Display your reserved cards
+    // Your reserved cards
     const myReservedDiv = document.createElement('div');
     myReservedDiv.className = "mb-4";
     myReservedDiv.innerHTML = `<div class="font-semibold">Your Reserved Cards:</div>`;
@@ -314,56 +304,85 @@ function renderGame(state) {
     }
     myArea.appendChild(myReservedDiv);
   
-    // Show Take Chips UI here instead of above if you prefer
-    if (state.chips && myPlayer.id === currentPlayer.id) {
-      const takeChipsContainer = document.createElement('div');
-      takeChipsContainer.className = "mb-6";
-  
-      const instructions = document.createElement('div');
-      instructions.textContent = "Take Chips: Select up to 3 chips (3 different colors, or 2 of the same if enough are available).";
-      takeChipsContainer.appendChild(instructions);
-  
+    // Chip selection at the top of the screen
+    // Only if it's your turn
+    if (myPlayer.id === currentPlayer.id && state.chips) {
+      // We'll attach the chip selection to the top, near turn info, for convenience
+      const chipBankContainer = document.createElement('div');
+      chipBankContainer.className = "mb-6 p-2 border rounded bg-white";
+      chipBankContainer.innerHTML = `<div class="font-semibold mb-2">Select Chips (Click to add/remove):</div>`;
+      
       const chipColors = ['white', 'blue', 'green', 'red', 'black'];
-      const chipSelection = { white:0, blue:0, green:0, red:0, black:0 };
+      const selectedChips = { white:0, blue:0, green:0, red:0, black:0 };
+  
+      const chipsWrapper = document.createElement('div');
+      chipsWrapper.className = "flex space-x-2 .select-all";
   
       chipColors.forEach(color => {
-        const wrapper = document.createElement('div');
-        wrapper.className = "inline-block mr-2";
+        const chipCount = state.chips[color];
+        const chipElem = document.createElement('div');
+        chipElem.className = "px-2 py-1 rounded border cursor-pointer";
+        chipElem.textContent = `${color}: ${chipCount}`;
+        
+        // Function to update chip UI based on selectedChips[color]
+        const updateChipUI = () => {
+          // Reset style
+          chipElem.className = "px-2 py-1 rounded border cursor-pointer";
+          if (selectedChips[color] === 1) {
+            chipElem.classList.add('border-blue-500');
+            chipElem.classList.add('bg-blue-100');
+          } else if (selectedChips[color] === 2) {
+            chipElem.classList.add('border-blue-700');
+            chipElem.classList.add('bg-blue-200');
+          }
+        };
   
-        const label = document.createElement('label');
-        label.textContent = color + ": ";
+        chipElem.addEventListener('click', () => {
+          // Cycle through 0->1->2->0
+          const totalSelected = Object.values(selectedChips).reduce((a,b) => a+b, 0);
   
-        const select = document.createElement('select');
-        select.className = "border p-1";
-        [0,1,2].forEach(num => {
-          const opt = document.createElement('option');
-          opt.value = num;
-          opt.textContent = num;
-          select.appendChild(opt);
+          if (selectedChips[color] === 0) {
+            // Add 1 if total < 3
+            if (totalSelected < 3) {
+              selectedChips[color] = 1;
+            }
+          } else if (selectedChips[color] === 1) {
+            // Try adding second chip of same color if it doesn't exceed 3 total
+            // The server will check validity anyway. Let's allow 2 and rely on server for final check.
+            if (totalSelected < 3) {
+              selectedChips[color] = 2;
+            } else {
+              // If already 2 selected overall, we can either revert to 0 or do nothing.
+              // Let's cycle to 0 if we can't add more.
+              selectedChips[color] = 0;
+            }
+          } else {
+            // If at 2, clicking again resets to 0
+            selectedChips[color] = 0;
+          }
+          updateChipUI();
         });
   
-        select.addEventListener('change', () => {
-          chipSelection[color] = parseInt(select.value, 10);
-        });
-  
-        wrapper.appendChild(label);
-        wrapper.appendChild(select);
-        takeChipsContainer.appendChild(wrapper);
+        chipsWrapper.appendChild(chipElem);
       });
+  
+      chipBankContainer.appendChild(chipsWrapper);
   
       const takeChipsBtn = document.createElement('button');
       takeChipsBtn.textContent = "Take Chips";
-      takeChipsBtn.className = "bg-blue-500 text-white px-4 py-2 ml-4";
+      takeChipsBtn.className = "bg-blue-500 text-white px-4 py-2 mt-2 block";
       takeChipsBtn.addEventListener('click', () => {
-        socket.emit('takeChips', { lobbyId: currentLobbyId, selection: chipSelection });
+        socket.emit('takeChips', { lobbyId: currentLobbyId, selection: selectedChips });
       });
-      takeChipsContainer.appendChild(takeChipsBtn);
+      chipBankContainer.appendChild(takeChipsBtn);
   
-      myArea.appendChild(takeChipsContainer);
+      // Insert this chip bank container right after the turn info for better visibility
+      splendorBoard.insertBefore(chipBankContainer, splendorBoard.children[1]);
     }
   
     splendorBoard.appendChild(myArea);
   }
+  
   
   
   
