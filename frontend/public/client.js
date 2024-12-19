@@ -155,10 +155,20 @@ function renderGame(state) {
     turnInfo.textContent = `Current Turn: ${currentPlayer.name}`;
     splendorBoard.appendChild(turnInfo);
   
-    // Display players and their points, chips
+    // Display players and their points, chips, purchased, and reserved cards
     const playersContainer = document.createElement('div');
     playersContainer.className = "mb-6 flex space-x-4";
     state.players.forEach(player => {
+      const purchasedHTML = player.cards.map(card => 
+        `<span class="inline-block px-2 py-1 bg-green-100 mr-1 rounded border border-green-300">
+           ${card.color} (Pts: ${card.points})
+         </span>`).join('');
+  
+      const reservedHTML = player.reserved.map(card => 
+        `<span class="inline-block px-2 py-1 bg-yellow-100 mr-1 rounded border border-yellow-400">
+           R: ${card.color} (Pts: ${card.points})
+         </span>`).join('');
+  
       const pDiv = document.createElement('div');
       pDiv.className = "border p-2 rounded bg-white";
       pDiv.innerHTML = `
@@ -169,12 +179,14 @@ function renderGame(state) {
             amt > 0 ? `<span class="inline-block px-2 py-1 bg-gray-200 mr-1 rounded">${color}: ${amt}</span>` : ''
           ).join('')}
         </div>
+        <div class="mt-2">Purchased Cards: ${purchasedHTML || "None"}</div>
+        <div class="mt-2">Reserved Cards: ${reservedHTML || "None"}</div>
       `;
       playersContainer.appendChild(pDiv);
     });
     splendorBoard.appendChild(playersContainer);
   
-    // Display the chip bank
+    // Display the chip bank and taking chips UI
     if (state.chips) {
       const bankContainer = document.createElement('div');
       bankContainer.className = "mb-6";
@@ -185,16 +197,62 @@ function renderGame(state) {
         ).join('')}
       `;
       splendorBoard.appendChild(bankContainer);
+  
+      // Add UI for taking chips
+      const takeChipsContainer = document.createElement('div');
+      takeChipsContainer.className = "mb-6";
+  
+      const instructions = document.createElement('div');
+      instructions.textContent = "Take Chips: Select up to 3 chips (3 different colors, or 2 of the same if enough are available).";
+      takeChipsContainer.appendChild(instructions);
+  
+      const chipColors = ['white', 'blue', 'green', 'red', 'black'];
+      const chipSelection = { white:0, blue:0, green:0, red:0, black:0 };
+  
+      chipColors.forEach(color => {
+        const wrapper = document.createElement('div');
+        wrapper.className = "inline-block mr-2";
+  
+        const label = document.createElement('label');
+        label.textContent = color + ": ";
+  
+        const select = document.createElement('select');
+        select.className = "border p-1";
+        [0,1,2].forEach(num => {
+          const opt = document.createElement('option');
+          opt.value = num;
+          opt.textContent = num;
+          select.appendChild(opt);
+        });
+  
+        select.addEventListener('change', () => {
+          chipSelection[color] = parseInt(select.value, 10);
+        });
+  
+        wrapper.appendChild(label);
+        wrapper.appendChild(select);
+        takeChipsContainer.appendChild(wrapper);
+      });
+  
+      const takeChipsBtn = document.createElement('button');
+      takeChipsBtn.textContent = "Take Chips";
+      takeChipsBtn.className = "bg-blue-500 text-white px-4 py-2 ml-4";
+      takeChipsBtn.addEventListener('click', () => {
+        socket.emit('takeChips', { lobbyId: currentLobbyId, selection: chipSelection });
+      });
+      takeChipsContainer.appendChild(takeChipsBtn);
+  
+      splendorBoard.appendChild(takeChipsContainer);
     }
   
-    // Display the market cards if market exists
+    // Display the market cards
     if (state.market) {
       const marketContainer = document.createElement('div');
       marketContainer.className = "space-y-6";
   
       [1, 2, 3].forEach(level => {
         const levelCards = state.market[`level${level}`];
-        if (!levelCards) return; // If no market for this level, skip
+        if (!levelCards) return; 
   
         const levelSection = document.createElement('div');
         levelSection.innerHTML = `<div class="font-semibold mb-2">Level ${level} Cards:</div>`;
@@ -203,7 +261,6 @@ function renderGame(state) {
   
         levelCards.forEach((card, index) => {
           if (!card) {
-            // If there's a missing card slot
             const emptySlot = document.createElement('div');
             emptySlot.className = "border p-2 rounded bg-gray-50 text-gray-400 text-center";
             emptySlot.textContent = "Empty";
@@ -212,7 +269,7 @@ function renderGame(state) {
           }
   
           const cardDiv = document.createElement('div');
-          cardDiv.className = "border p-4 rounded bg-white shadow cursor-pointer hover:shadow-lg transition-shadow";
+          cardDiv.className = "border p-4 rounded bg-white shadow relative hover:shadow-lg transition-shadow";
           cardDiv.innerHTML = `
             <div class="font-bold">Points: ${card.points}</div>
             <div class="text-sm">Gives: ${card.color}</div>
@@ -227,11 +284,21 @@ function renderGame(state) {
           cardDiv.dataset.level = level;
           cardDiv.dataset.index = index;
   
-          // Add a click event to buy the card
+          // Click to buy card (if it's your turn and affordable)
           cardDiv.addEventListener('click', () => {
             socket.emit('buyCard', { level, index, lobbyId: currentLobbyId });
           });
   
+          // Reserve button
+          const reserveBtn = document.createElement('button');
+          reserveBtn.className = "bg-yellow-500 text-white px-2 py-1 mt-2 block";
+          reserveBtn.textContent = "Reserve";
+          reserveBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Don't trigger buyCard on cardDiv
+            socket.emit('reserveCard', { lobbyId: currentLobbyId, level, index });
+          });
+  
+          cardDiv.appendChild(reserveBtn);
           cardsWrapper.appendChild(cardDiv);
         });
   
@@ -242,4 +309,5 @@ function renderGame(state) {
       splendorBoard.appendChild(marketContainer);
     }
   }
+  
   

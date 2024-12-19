@@ -100,6 +100,33 @@ export function canBuyCard(player, cardInfo, gameState) {
   return player.chips.gold >= goldNeeded;
 }
 
+// enables players to reserve a card
+export function canReserveCard(player, cardInfo, gameState) {
+    const card = getCardFromMarket(gameState, cardInfo);
+    if (!card) return false;
+    // A player can reserve a card if they have fewer than 3 reserved cards.
+    return player.reserved.length < 3;
+  }
+  
+  export function reserveCard(player, cardInfo, gameState) {
+    const card = getCardFromMarket(gameState, cardInfo);
+    if (!card) return;
+  
+    // Remove the card from the market
+    const marketArray = gameState.market[`level${cardInfo.level}`];
+    marketArray[cardInfo.index] = gameState.decks[`level${cardInfo.level}`].shift();
+  
+    // Add to player’s reserved cards
+    player.reserved.push(card);
+  
+    // If gold chips are available, give one gold chip
+    if (gameState.chips.gold > 0) {
+      gameState.chips.gold -= 1;
+      player.chips.gold += 1;
+    }
+  }
+  
+
 export function purchaseCard(player, cardInfo, gameState) {
   const card = getCardFromMarket(gameState, cardInfo);
   if (!card) return;

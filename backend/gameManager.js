@@ -7,7 +7,6 @@ let gameSessions = {};
 export function handleGameEvents(io, socket) {
   socket.on('gameReady', (data) => {
     const { lobbyId, players } = data;
-    // Initialize a new game session
     const gameState = gameLogic.initializeGame(players);
     gameSessions[lobbyId] = { gameState, players };
     io.to(lobbyId).emit('gameStateUpdate', gameSessions[lobbyId].gameState);
@@ -18,7 +17,13 @@ export function handleGameEvents(io, socket) {
     const session = gameSessions[lobbyId];
     if (!session) return;
 
-    const player = session.gameState.players.find(p => p.id === socket.id);
+    const currentPlayer = session.gameState.players[session.gameState.currentPlayerIndex];
+    if (socket.id !== currentPlayer.id) {
+      socket.emit('errorMessage', 'It is not your turn.');
+      return;
+    }
+
+    const player = currentPlayer;
     if (gameLogic.canTakeChips(selection, session.gameState)) {
       gameLogic.applyChipSelection(player, selection, session.gameState);
       gameLogic.nextTurn(session.gameState);
@@ -31,5 +36,51 @@ export function handleGameEvents(io, socket) {
     }
   });
 
-  // Add similar event handlers for 'buyCard', 'reserveCard', etc., following the same pattern.
+  socket.on('buyCard', (data) => {
+    const { lobbyId, level, index } = data;
+    const session = gameSessions[lobbyId];
+    if (!session) return;
+
+    const currentPlayer = session.gameState.players[session.gameState.currentPlayerIndex];
+    if (socket.id !== currentPlayer.id) {
+      socket.emit('errorMessage', 'It is not your turn.');
+      return;
+    }
+
+    const player = currentPlayer;
+    if (gameLogic.canBuyCard(player, { level, index }, session.gameState)) {
+      gameLogic.purchaseCard(player, { level, index }, session.gameState);
+      gameLogic.nextTurn(session.gameState);
+      io.to(lobbyId).emit('gameStateUpdate', session.gameState);
+      gameLogic.checkGameOver(session.gameState, (winner) => {
+        if (winner) io.to(lobbyId).emit('gameOver', winner);
+      });
+    } else {
+      socket.emit('errorMessage', 'Cannot buy this card.');
+    }
+  });
+
+  socket.on('reserveCard', (data) => {
+    const { lobbyId, level, index } = data;
+    const session = gameSessions[lobbyId];
+    if (!session) return;
+
+    const currentPlayer = session.gameState.players[session.gameState.currentPlayerIndex];
+    if (socket.id !== currentPlayer.id) {
+      socket.emit('errorMessage', 'It is not your turn.');
+      return;
+    }
+
+    const player = currentPlayer;
+    if (gameLogic.canReserveCard(player, { level, index }, session.gameState)) {
+      gameLogic.reserveCard(player, { level, index }, session.gameState);
+      gameLogic.nextTurn(session.gameState);
+      io.to(lobbyId).emit('gameStateUpdate', session.gameState);
+      gameLogic.checkGameOver(session.gameState, (winner) => {
+        if (winner) io.to(lobbyId).emit('gameOver', winner);
+      });
+    } else {
+      socket.emit('errorMessage', 'Cannot reserve this card.');
+    }
+  });
 }
