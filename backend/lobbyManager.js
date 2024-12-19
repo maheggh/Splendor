@@ -1,13 +1,8 @@
 // backend/lobbyManager.js
-
 let lobbies = []; 
 // Structure: [{ id: 'lobbyId', name: 'LobbyName', players: [{id, name, leader: bool}], ...}]
 
-module.exports = {
-  handleLobbyEvents
-};
-
-function handleLobbyEvents(io, socket) {
+export function handleLobbyEvents(io, socket) {
   socket.on('createLobby', (data) => {
     const lobbyId = generateLobbyId();
     const lobbyName = data.lobbyName || `Lobby ${lobbyId}`;
@@ -101,7 +96,6 @@ function handleLobbyEvents(io, socket) {
   });
 
   socket.on('disconnect', () => {
-    // Remove player from any lobby
     for (const lobby of lobbies) {
       const playerIndex = lobby.players.findIndex(p => p.id === socket.id);
       if (playerIndex > -1) {

@@ -1,14 +1,10 @@
 // backend/gameManager.js
-const gameLogic = require('./gameLogic');
+import * as gameLogic from './gameLogic.js';
 
 let gameSessions = {}; 
 // { lobbyId: { gameState, players: [...] } }
 
-module.exports = {
-  handleGameEvents
-};
-
-function handleGameEvents(io, socket) {
+export function handleGameEvents(io, socket) {
   socket.on('gameReady', (data) => {
     const { lobbyId, players } = data;
     // Initialize a new game session
@@ -35,5 +31,5 @@ function handleGameEvents(io, socket) {
     }
   });
 
-  // Similarly handle 'buyCard', 'reserveCard', etc.
+  // Add similar event handlers for 'buyCard', 'reserveCard', etc., following the same pattern.
 }
