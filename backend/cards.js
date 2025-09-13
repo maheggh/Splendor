@@ -127,4 +127,20 @@ const LEVEL_1_CARDS = [
   ];
   
 
-export {LEVEL_1_CARDS, LEVEL_2_CARDS, LEVEL_3_CARDS}
+// exports are at the end (including NOBLES)
+
+// Nobles: each noble requires certain discounts and gives 3 points.
+const NOBLES = [
+  { points: 3, cost: { white: 3, blue: 3 } },
+  { points: 3, cost: { white: 3, green: 3 } },
+  { points: 3, cost: { blue: 3, green: 3 } },
+  { points: 3, cost: { white: 4 } },
+  { points: 3, cost: { blue: 4 } },
+  { points: 3, cost: { green: 4 } },
+  { points: 3, cost: { red: 3, black: 3 } },
+  { points: 3, cost: { red: 4 } },
+  { points: 3, cost: { black: 4 } },
+  { points: 3, cost: { white: 3, black: 3 } }
+];
+
+export { LEVEL_1_CARDS, LEVEL_2_CARDS, LEVEL_3_CARDS, NOBLES };
