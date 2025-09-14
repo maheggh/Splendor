@@ -9,10 +9,10 @@ type Player = {
   reserved: any[];
 };
 
-export default function Opponents({ players, meId }: { players: Player[]; meId: string }) {
+export default function Opponents({ players, meId, showHeader = false }: { players: Player[]; meId: string; showHeader?: boolean }) {
   return (
     <div className="space-y-2">
-      <h3 className="font-semibold text-center text-9xl">Opponents</h3>
+      {showHeader && <h3 className="font-semibold text-center">Opponents</h3>}
       {players.filter(p => p.id !== meId).map(player => {
         const cardColors: Record<string, number> = { white:0, blue:0, green:0, red:0, black:0 };
         (player.cards || []).forEach(c => { cardColors[c.color] = (cardColors[c.color] || 0) + 1; });

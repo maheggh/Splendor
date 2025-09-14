@@ -12,9 +12,11 @@
     "@tailwindcss/vite": "^4.1.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "socket.io-client": "^4.7.5"
+    "socket.io-client": "^4.7.5",
+    "splendor-monorepo": "file:.."
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.13",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

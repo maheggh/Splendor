@@ -1,54 +1,25 @@
-const LEVEL_1_CARDS = [
-    // White-producing cards (8)
-    { points: 0, color: 'white', cost: { blue:1, black:1 } },
-    { points: 0, color: 'white', cost: { black:2 } },
-    { points: 0, color: 'white', cost: { blue:2 } },
-    { points: 0, color: 'white', cost: { green:1, blue:1 } },
-    { points: 0, color: 'white', cost: { green:2 } },
-    { points: 0, color: 'white', cost: { red:1, blue:1 } },
-    { points: 0, color: 'white', cost: { black:1, green:1 } },
-    { points: 1, color: 'white', cost: { blue:1, green:1, red:1, black:1 } },
-  
-    // Blue-producing cards (8)
-    { points: 0, color: 'blue', cost: { red:1, black:1 } },
-    { points: 0, color: 'blue', cost: { red:2 } },
-    { points: 0, color: 'blue', cost: { black:2 } },
-    { points: 0, color: 'blue', cost: { green:1, black:1 } },
-    { points: 0, color: 'blue', cost: { green:2 } },
-    { points: 0, color: 'blue', cost: { white:1, black:1 } },
-    { points: 0, color: 'blue', cost: { white:2 } },
-    { points: 1, color: 'blue', cost: { white:1, green:1, red:1, black:1 } },
-  
-    // Green-producing cards (8)
-    { points: 0, color: 'green', cost: { white:1, black:1 } },
-    { points: 0, color: 'green', cost: { white:2 } },
-    { points: 0, color: 'green', cost: { white:1, red:1 } },
-    { points: 0, color: 'green', cost: { white:1, blue:1 } },
-    { points: 0, color: 'green', cost: { blue:1, red:1 } },
-    { points: 0, color: 'green', cost: { red:2 } },
-    { points: 0, color: 'green', cost: { white:1, black:1, red:1 } },
-    { points: 1, color: 'green', cost: { white:1, blue:1, black:1, red:1 } },
-  
-    // Red-producing cards (8)
-    { points: 0, color: 'red', cost: { white:2 } },
-    { points: 0, color: 'red', cost: { white:1, green:1 } },
-    { points: 0, color: 'red', cost: { white:1, blue:1 } },
-    { points: 0, color: 'red', cost: { blue:2 } },
-    { points: 0, color: 'red', cost: { green:2 } },
-    { points: 0, color: 'red', cost: { black:1, blue:1 } },
-    { points: 0, color: 'red', cost: { white:1, black:1 } },
-    { points: 1, color: 'red', cost: { white:1, blue:1, green:1, black:1 } },
-  
-    // Black-producing cards (8)
-    { points: 0, color: 'black', cost: { white:1, red:1 } },
-    { points: 0, color: 'black', cost: { white:2 } },
-    { points: 0, color: 'black', cost: { white:1, green:1 } },
-    { points: 0, color: 'black', cost: { green:2 } },
-    { points: 0, color: 'black', cost: { blue:1, green:1 } },
-    { points: 0, color: 'black', cost: { blue:2 } },
-    { points: 0, color: 'black', cost: { red:2 } },
-    { points: 1, color: 'black', cost: { white:1, blue:1, green:1, red:1 } }
-  ];
+const COLORS = ['white', 'blue', 'green', 'red', 'black'];
+
+function generateLevel1Cards() {
+  const deck = [];
+  for (const color of COLORS) {
+    const others = COLORS.filter(c => c !== color);
+    // Four 0-point cards: 3 of a single other color
+    for (let i = 0; i < others.length; i++) {
+      const oc = others[i];
+      deck.push({ points: 0, color, cost: { [oc]: 3 } });
+    }
+    // Three 0-point cards: 2 of one color + 1 of another (total 3)
+    deck.push({ points: 0, color, cost: { [others[0]]: 2, [others[1]]: 1 } });
+    deck.push({ points: 0, color, cost: { [others[2]]: 2, [others[3]]: 1 } });
+    deck.push({ points: 0, color, cost: { [others[1]]: 2, [others[2]]: 1 } });
+    // One 1-point card: 5 different (1 of each color)
+    deck.push({ points: 1, color, cost: { white: 1, blue: 1, green: 1, red: 1, black: 1 } });
+  }
+  return deck;
+}
+
+const LEVEL_1_CARDS = generateLevel1Cards();
   
 
   const LEVEL_2_CARDS = [
